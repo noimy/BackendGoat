@@ -4,7 +4,93 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Multi-Tab Web Proxy</title>
-  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Full Dark Theme */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      background: #121212; /* Dark background */
+      color: #e0e0e0; /* Light text */
+    }
+    #navbar {
+      background: #1e1e1e;
+      padding: 10px;
+      display: flex;
+      align-items: center;
+    }
+    #tabs {
+      display: flex;
+      background: #1e1e1e;
+      padding: 5px;
+      overflow-x: auto;
+    }
+    .tab {
+      padding: 5px 10px;
+      margin: 0 5px;
+      background: #333;
+      color: #e0e0e0;
+      cursor: pointer;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      white-space: nowrap;
+    }
+    .tab.active {
+      background: #444;
+    }
+    .tab-close {
+      margin-left: 10px;
+      color: #ff4444;
+      cursor: pointer;
+    }
+    .tab-url-input {
+      flex: 1;
+      padding: 5px;
+      margin-left: 10px;
+      border: none;
+      border-radius: 3px;
+      background: #444;
+      color: #e0e0e0;
+    }
+    .tab-go-button {
+      padding: 5px 10px;
+      margin-left: 10px;
+      background: #555;
+      color: #e0e0e0;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .tab-go-button:hover {
+      background: #666;
+    }
+    iframe {
+      flex: 1;
+      border: none;
+      width: 100%;
+      display: none;
+      background: #121212;
+    }
+    iframe.active {
+      display: block;
+    }
+    #add-tab-button {
+      padding: 5px 10px;
+      background: #333;
+      color: #e0e0e0;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+    #add-tab-button:hover {
+      background: #444;
+    }
+  </style>
 </head>
 <body>
   <div id="navbar">
@@ -13,6 +99,90 @@
   </div>
   <div id="iframe-container"></div>
 
-  <script src="script.js"></script>
+  <script>
+    let tabCounter = 0;
+    const tabsContainer = document.getElementById("tabs");
+    const iframeContainer = document.getElementById("iframe-container");
+    const addTabButton = document.getElementById("add-tab-button");
+
+    function createNewTab() {
+      tabCounter++;
+      const tabId = `tab-${tabCounter}`;
+      const iframeId = `iframe-${tabCounter}`;
+
+      // Create the tab button
+      const tab = document.createElement("div");
+      tab.id = tabId;
+      tab.className = "tab";
+      tab.textContent = `Tab ${tabCounter}`;
+      tab.addEventListener("click", () => switchTab(tabId, iframeId));
+
+      // Add close button to the tab
+      const closeButton = document.createElement("span");
+      closeButton.className = "tab-close";
+      closeButton.textContent = "×";
+      closeButton.addEventListener("click", (e) => {
+        e.stopPropagation();
+        deleteTab(tabId, iframeId);
+      });
+      tab.appendChild(closeButton);
+
+      // Create the URL input and Go button for the tab
+      const urlInput = document.createElement("input");
+      urlInput.type = "text";
+      urlInput.className = "tab-url-input";
+      urlInput.placeholder = "Enter URL";
+
+      const goButton = document.createElement("button");
+      goButton.className = "tab-go-button";
+      goButton.textContent = "Go";
+      goButton.addEventListener("click", () => {
+        const url = urlInput.value;
+        if (url) {
+          const iframe = document.getElementById(iframeId);
+          iframe.src = `/api/proxy?url=${encodeURIComponent(url)}`;
+        }
+      });
+
+      // Append URL input and Go button to the tab
+      tab.appendChild(urlInput);
+      tab.appendChild(goButton);
+
+      // Create the iframe
+      const iframe = document.createElement("iframe");
+      iframe.id = iframeId;
+      iframe.src = "about:blank";
+
+      // Add tab and iframe to the DOM
+      tabsContainer.appendChild(tab);
+      iframeContainer.appendChild(iframe);
+      tabsContainer.appendChild(addTabButton);
+
+      switchTab(tabId, iframeId);
+    }
+
+    function switchTab(tabId, iframeId) {
+      document.querySelectorAll(".tab").forEach((tab) => tab.classList.remove("active"));
+      document.querySelectorAll("iframe").forEach((iframe) => iframe.classList.remove("active"));
+
+      document.getElementById(tabId).classList.add("active");
+      document.getElementById(iframeId).classList.add("active");
+    }
+
+    function deleteTab(tabId, iframeId) {
+      document.getElementById(tabId).remove();
+      document.getElementById(iframeId).remove();
+
+      const remainingTabs = document.querySelectorAll(".tab");
+      if (remainingTabs.length > 0) {
+        const firstTab = remainingTabs[0];
+        const firstIframe = document.getElementById(firstTab.id.replace("tab-", "iframe-"));
+        switchTab(firstTab.id, firstIframe.id);
+      }
+    }
+
+    addTabButton.addEventListener("click", createNewTab);
+    createNewTab();
+  </script>
 </body>
 </html>
